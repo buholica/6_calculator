@@ -1,21 +1,64 @@
 import tkinter as tk
 from button import GreenButton, GreyButton, NumButton
-from customtkinter import CTkEntry
 
 # --------------------------------- CONSTANTS ----------------------------- #
 BG_COLOR = "#202020"
 FONT_NAME = "Helvetica"
+user_entry = ""
 
 
 # -------------------------------- Functions ----------------------------- #
+def create_btn(cls, frame, text, b_row, b_column, width=50, b_colspan=1, command=None):
+    btn = cls(frame, text=text, width=width, command=command)
+    btn.grid(row=b_row, column=b_column, columnspan=b_colspan, padx=12, pady=5)
+
+
+def update_display(value):
+    display.delete(0, tk.END)
+    display.insert(0, value)
+
+
 def clean_display():
-    display.delete(0, tk.END)
+    global user_entry
+    user_entry = ""
+    update_display("")
 
 
-def num_btn_click(value):
-    current_text = display.get()
-    display.delete(0, tk.END)
-    display.insert(0, current_text + str(value))
+def press_btn(value):
+    global user_entry
+    str_value = str(value)
+    user_entry += str(value)
+
+    if isinstance(value, int) or str_value == ".":
+        current_value = display.get()
+        display.delete(0, tk.END)
+        display.insert(0, current_value + str_value)
+    else:
+        update_display("")
+
+
+def press_percent_btn():
+    global user_entry
+    try:
+        total = str(eval(user_entry) / 100)
+        user_entry = total
+        display.delete(0, tk.END)
+        display.insert(0, total)
+    except Exception as e:
+        user_entry = "Error"
+        update_display("Error")
+
+
+def calculate():
+    global user_entry
+    print(user_entry)
+    try:
+        total = str(round(eval(user_entry), 3))
+        user_entry = total
+        update_display(total)
+    except Exception as e:
+        user_entry = "Error"
+        update_display("Error")
 
 
 # ---------------------------------- Window ------------------------------- #
@@ -25,9 +68,8 @@ window.geometry("300x400")
 window.config(bg=BG_COLOR)
 
 # -------------------------------- Screen Division ---------------------- #
-
-screen_frame = tk.Frame(window, bg=BG_COLOR, relief=tk.RAISED, bd=2, width=250, height=90)
-screen_frame.grid(row=0, column=0, sticky="nsew")
+screen_frame = tk.Frame(window, bg=BG_COLOR, relief=tk.RAISED, bd=0, width=250, height=90)
+screen_frame.grid(row=0, column=0, sticky="ns")
 
 screen_frame.grid_propagate(False)
 
@@ -35,60 +77,40 @@ btn_frame = tk.Frame(window, bg=BG_COLOR)
 btn_frame.grid(row=1, column=0)
 
 # ----------------------------- LABEL --------------------------------- #
-display = tk.Entry(screen_frame, bg=BG_COLOR, fg="white",
-                   font=(FONT_NAME, 34, "normal"), bd=0)
+display = tk.Entry(screen_frame, bg=BG_COLOR, fg="white", font=(FONT_NAME, 34, "normal"), bd=0)
 display.grid(row=0, column=0, padx=20, pady=15, sticky="se")
 
 screen_frame.grid_rowconfigure(0, weight=1)
 screen_frame.grid_columnconfigure(0, weight=1)
 
-
 # ------------------------------ BUTTONS ------------------------------ #
-ac_btn = GreyButton(btn_frame, text="AC", command=clean_display)
-ac_btn.grid(row=0, column=0, padx=12, pady=5)
+# AC, % buttons
+create_btn(GreyButton, btn_frame, "AC", 0, 0, width=125, b_colspan=2, command=clean_display)
+create_btn(GreyButton, btn_frame, "%", 0, 2, command=press_percent_btn)
 
-plus_minus_btn = GreyButton(btn_frame, text="+/-")
-plus_minus_btn.grid(row=0, column=1, padx=12, pady=5)
+# /, *, -, +, = buttons
+create_btn(GreenButton, btn_frame, "÷", 0, 3, command=lambda: press_btn("/"))
+create_btn(GreenButton, btn_frame, "x", 1, 3, command=lambda: press_btn("*"))
+create_btn(GreenButton, btn_frame, "-", 2, 3, command=lambda: press_btn("-"))
+create_btn(GreenButton, btn_frame, "+", 3, 3, command=lambda: press_btn("+"))
+create_btn(GreenButton, btn_frame, "=", 4, 3, command=calculate)
 
-percent_btn = GreyButton(btn_frame, text="%")
-percent_btn.grid(row=0, column=2, padx=12, pady=5)
+# Dot button
+create_btn(NumButton, btn_frame, ".", 4, 2, command=lambda: press_btn("."))
 
-division_btn = GreenButton(btn_frame, text="÷")
-division_btn.grid(row=0, column=3, padx=12, pady=5)
-
-multiply_btn = GreenButton(btn_frame, text="x")
-multiply_btn.grid(row=1, column=3, padx=12, pady=5)
-
-minus_btn = GreenButton(btn_frame, text="-")
-minus_btn.grid(row=2, column=3, padx=12, pady=5)
-
-plus_btn = GreenButton(btn_frame, text="+")
-plus_btn.grid(row=3, column=3, padx=12, pady=5)
-
-equals_btn = GreenButton(btn_frame, text="=")
-equals_btn.grid(row=4, column=3, padx=12, pady=5)
-
-num_list = []
+# Number buttons
 row = 1
 column = 2
 for num in reversed(range(10)):
     if num == 0:
-        num_btn = NumButton(btn_frame, text=num, width=125, command=lambda n=num: num_btn_click(n))
-        num_btn.grid(row=4, column=0, columnspan=2, padx=12, pady=5)
-        num_list.append(num)
+        create_btn(NumButton, btn_frame, num, 4, 0, width=125, b_colspan=2,
+                   command=lambda n=num: press_btn(n))
     else:
-        num_btn = NumButton(btn_frame, text=num, command=lambda n=num: num_btn_click(n))
-        num_btn.grid(row=row, column=column, padx=12, pady=5)
-        num_list.append(num)
+        create_btn(NumButton, btn_frame, num, row, column, command=lambda n=num: press_btn(n))
         column -= 1
         if column < 0:
             column = 2
             row += 1
-
-print(num_list)
-
-dot_btn = NumButton(btn_frame, text=".")
-dot_btn.grid(row=4, column=2, padx=12, pady=5)
 
 
 window.mainloop()
